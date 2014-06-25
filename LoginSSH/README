@@ -1,0 +1,7 @@
+Send mail when anybody login with ssh
+
+- put LoginSSH.sh in /etc/profile.d/
+
+- change MAIL_TO=
+
+- Need MTA and mailutils  
