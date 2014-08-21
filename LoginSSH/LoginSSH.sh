@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Put yours emails separated with simple space
+# ex: MAIL_TO=(security@domain.org admin@domain.org)
 MAIL_TO=()
 
 MAILCMD='/bin/mail'
