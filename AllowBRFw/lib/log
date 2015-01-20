@@ -1,0 +1,9 @@
+#
+# Log to stdout
+##
+function log_append(){
+
+    echo $1
+
+}
+
