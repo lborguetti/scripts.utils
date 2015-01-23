@@ -1,4 +1,4 @@
-scripts-utils
+scripts.utils
 =============
 
-bash scripts-utils
+Repo with bash tricks tips and tricks.
