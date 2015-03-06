@@ -38,7 +38,7 @@ loadvar() {
 loadfunc() {
   eval "funclist=\"\$CLASS_${CLASS}_FUNCTIONS\""
   for func in $funclist; do
-    eval "${func}() { ${CLASS}::${func} \"\$*\"; return \$?; }"
+    eval "${func}() { ${CLASS}::${func} \"\$@\"; return \$?; }"
   done
 }
 
@@ -64,9 +64,9 @@ new() {
   local funclist
   eval "funclist=\"\$CLASS_${class}_FUNCTIONS\""
   for func in $funclist; do
-    eval "${cvar}.${func}() { local t=\$THIS; THIS=$id; local c=\$CLASS; CLASS=$class; loadvar; loadfunc; ${class}::${func} \"\$*\"; rt=\$?; savevar; CLASS=\$c; THIS=\$t; return $rt; }"
+    eval "${cvar}.${func}() { local t=\$THIS; THIS=$id; local c=\$CLASS; CLASS=$class; loadvar; loadfunc; ${class}::${func} \"\$@\"; rt=\$?; savevar; CLASS=\$c; THIS=\$t; return $rt; }"
   done
-  eval "${cvar}.${class} \"\$*\" || true"
+  eval "${cvar}.${class} \"\$@\" || true"
 }
 
 # ---------------------------------------------------------------------------
