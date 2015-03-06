@@ -1,0 +1,4 @@
+# List of networks and hosts that are allowed
+
+# ex:
+#192.168.0.0/24

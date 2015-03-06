@@ -1,0 +1,145 @@
+#
+# Starting firewall rules
+##
+
+function fw_start(){
+
+    local host network
+
+    log_append "Start $0"
+
+    # Check lock
+    unset RETURN
+    lock_check $DIR_LOCK/AllowBRFw
+
+    if [ "${RETURN}"x = "0x" ] ; then
+        log_append "$0 already loaded"
+        exit 99
+    fi
+
+    if [ ${DB_UPDATE}x = "truex" ]; then
+        fw_db_update
+    fi
+
+    # Create chain for conections
+    $IPT -t filter -N ${IPT_CHAIN}
+
+    # Allow whitelist
+    for host in $(${EGREP} -v "^#|^$" ${FILE_WL}); do
+        ${IPT} -t filter -A ${IPT_CHAIN} -s ${host} -j ACCEPT
+    done
+
+    # Allow BR networks
+    log_append "Wait for create iptables rules"
+    for network in $(${EGREP} -v "^#|^$" ${FILE_DB}); do
+        ${IPT} -t filter -A ${IPT_CHAIN} -s ${network} -j ACCEPT
+    done
+
+    # Log and Drop
+    ${IPT} -t filter -A ${IPT_CHAIN} -m limit --limit 1/m -j LOG --log-prefix ${IPT_LOG_PREFIX}
+
+    if [ ${DEBUG}x = "falsex" ]; then
+        ${IPT} -t filter -A ${IPT_CHAIN} -j REJECT
+    else
+        log_append "DEBUG is true, not blocking connections"
+    fi
+
+    # Redirect trafic to $IPT_CHAIN
+    for get_opts in $(${EGREP} -v "^#|^$" ${FILE_PT}); do
+        PORT=$(echo ${get_opts} |${AWK} -F '/' '{print $1}')
+        PROTO=$(echo ${get_opts}|${AWK} -F '/' '{print $2}')
+        echo "Redirect ${PORT}/${PROTO} trafic to chain ${IPT_CHAIN}"
+        ${IPT} -t filter -I INPUT -p ${PROTO} --dport ${PORT} -j ${IPT_CHAIN}
+    done
+
+    # Create lock
+    unset RETURN
+    lock_create $DIR_LOCK/AllowBRFw
+
+    if [ "${RETURN}"x != "0x" ] ; then
+        log_append "fails to create lock"
+    fi
+
+    log_append "OK"
+
+}
+
+#
+# Stop firewall rules
+##
+
+function fw_stop(){
+
+    log_append "Stop $0"
+
+    # Check lock
+    unset RETURN
+    lock_check $DIR_LOCK/AllowBRFw
+
+    if [ "${RETURN}"x != "0x" ] ; then
+        log_append "$0 don't loaded"
+        exit 99
+    fi
+
+    # Remove redirect trafic to $IPT_CHAIN
+    for get_opts in $(${EGREP} -v "^#|^$" ${FILE_PT}); do
+        PORT=$(echo ${get_opts} |${AWK} -F '/' '{print $1}')
+        PROTO=$(echo ${get_opts}|${AWK} -F '/' '{print $2}')
+
+        ${IPT} -t filter -D INPUT -p ${PROTO} --dport ${PORT} -j ${IPT_CHAIN}
+    done
+
+    # Flush rules for ${IPT_CHAIN}
+    ${IPT} -t filter -F ${IPT_CHAIN}
+
+    # Deleted ${IPT_CHAIN}
+    ${IPT} -t filter -X ${IPT_CHAIN}
+
+    # remove lock
+    unset RETURN
+    lock_del $DIR_LOCK/AllowBRFw
+
+    if [ "${RETURN}"x != "0x" ] ; then
+        log_append "fails to remove lock"
+    fi
+
+    log_append "OK"
+
+}
+
+#
+# Update db file
+##
+
+function fw_db_update(){
+
+    log_append "Updated delegated lacnic BR networks"
+
+    unset RETURN
+    check_internet_access
+
+    if [ "${RETURN}"x != "0x" ] ; then
+        log_append "NOK, fail to updated - don't access internet"
+        return
+    fi
+
+    ${WGET} -q ${LACNIC_URL} -O - | ${GREP} "BR|ipv4" | \
+    ${AWK} -F "|" '{ x = 1; i = 32; while (x != $5) { x = x*2; i--; }; print $4 "/" i}' \
+    > ${FILE_DB}.tmp
+
+    if [ "${?}"x != "0x" ] ; then
+        log_append "NOK, fail to updated - unknown error"
+        return
+    fi
+
+    if [ $(${WC} -l ${FILE_DB}.tmp |${AWK} '{print $1}') -ne $(${WC} -l ${FILE_DB} |${AWK} '{print $1}') ] ; then
+        ${MV} -f ${FILE_DB} ${FILE_DB}.old
+        ${MV} -f ${FILE_DB}.tmp ${FILE_DB}
+        log_append "OK, db file updated"
+    else
+        log_append "DB file don't updated, new db file = db file"
+    fi
+
+    ${RM} -f ${FILE_DB}.tmp
+
+}

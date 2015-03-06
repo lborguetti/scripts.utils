@@ -1,0 +1,29 @@
+#
+# help
+##
+
+function help_usage(){
+
+    echo -e "Usage: $0 <start|stop|restart|update>\n"
+    echo -e "start   - drop conections for don't BR networks"
+    echo -e "stop    - stop $0"
+    echo -e "update  - update delegated lacnic BR networks "
+    echo -e "\nExample: $0 start"
+
+}
+
+function help_erro_noroot(){
+
+    echo "Only root can execute this script"
+
+}
+
+function help_erro_environment(){
+
+    echo  "Enviroment error"
+
+}
+
+if [ "$RETURN"x = 1x ]; then
+    help_usage
+fi

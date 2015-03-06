@@ -1,0 +1,72 @@
+#
+# check var/run and var/log var/db - if not && create
+##
+
+function check_environment(){
+
+    local aux
+
+    aux=$1
+
+    RETURN=0
+
+    # Check Log Directory
+    if [ ! -d "${DIR_LOG}" ] ; then
+        ${MKDIR} -p ${DIR_LOG}
+    fi
+
+    # Check Lock Directory
+    if [ ! -d "${DIR_LOCK}" ] ; then
+        ${MKDIR} -p ${DIR_LOCK}
+    fi
+
+    # Check BD Directory
+    if [ ! -d "${DIR_DB}" ] ; then
+        ${MKDIR} -p ${DIR_DB}
+    fi
+
+    # Check Parameters of Script
+    if [ $# = 0 ]; then
+        RETURN=1
+    fi
+
+}
+
+#
+# check current and return:
+# RETURN 0 - ok
+# RETURN 1 - not
+##
+function check_user(){
+
+    local _USER
+
+    _USER=$1
+
+    if [ "$USER"x = "$_USER"x ]; then
+        RETURN=0
+    else
+        RETURN=1
+    fi
+
+}
+
+#
+# check internet access and return:
+# RETURN 0 - ok
+# RETURN 1 - not
+##
+function check_internet_access(){
+
+    local b
+
+    for ((b=0;$b<${#HOSTS[*]};b++)); do
+        ${WGET} -q ${HOSTS[$b]} -O /dev/null > /dev/null 2>&1
+        if [ $? = "0" ]; then
+            RETURN=0
+        else
+            RETURN=1
+        fi
+    done
+
+}

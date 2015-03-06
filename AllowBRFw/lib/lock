@@ -1,0 +1,54 @@
+# check lock exist and return :
+# RETURN 0 - ok
+# RETURN 1 - exist
+##
+
+function lock_check(){
+
+    LOCK_FILE=$1
+
+    if [ ! -e "$LOCK_FILE" ] ; then
+        RETURN=1
+    else
+        RETURN=0
+    fi
+
+}
+
+#
+# create lock and return :
+# RETURN 0 - ok
+# RETURN 1 - erro
+##
+function lock_create(){
+
+    LOCK_FILE=$1
+
+    lock_check $LOCK_FILE
+    if [ "$RETURN"x = "1x" ] ; then
+        ${TOUCH} $LOCK_FILE
+        RETURN=0
+    else
+        RETURN=1
+    fi
+
+}
+
+#
+# remove lock and return :
+# RETURN 0 - ok
+# RETURN 1 - erro
+##
+function lock_del(){
+
+    LOCK_FILE=$1
+
+    lock_check $LOCK_FILE
+    if [ "$RETURN"x = "0x" ] ; then
+        ${RM} -f $LOCK_FILE
+        RETURN=0
+    else
+        RETURN=1
+    fi
+
+}
